@@ -92,6 +92,8 @@
 #include "UserEvents.h"
 #include "ScopedPtr.h"
 
+#include "PortMapper.h" // Needed for NAT-PMP / PCP automatic port forwarding
+
 #ifdef ENABLE_UPNP
 #include "UPnPBase.h" // Needed for UPnP
 #endif
@@ -201,6 +203,7 @@ CamuleApp::CamuleApp()
 	m_statistics = NULL;
 	uploadBandwidthThrottler = NULL;
 	uploadDiskIOThread = NULL;
+	m_portMapper = NULL;
 #ifdef ENABLE_UPNP
 	m_upnp = NULL;
 	m_upnpMappings.resize(4);
@@ -354,6 +357,9 @@ int CamuleApp::OnExit()
 
 	delete ipfilter;
 	ipfilter = NULL;
+
+	delete m_portMapper;
+	m_portMapper = NULL;
 
 #ifdef ENABLE_UPNP
 	delete m_upnp;
@@ -1050,6 +1056,39 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 	}
 #endif
 
+	// Automatic router port forwarding via NAT-PMP / PCP. This runs
+	// independently of (and in addition to) the libupnp-based UPnP IGD
+	// support above, so a router that ignores one protocol can still be
+	// opened through another. Enabled by default via its own preference
+	// (/eMule/AutoPortForwarding) so the listen port is opened out of the
+	// box without requiring the UPnP checkbox. The worker thread renews
+	// the finite leases on schedule, so mappings survive lease expiry and
+	// router reboots.
+	if (m_portMapper) {
+		m_portMapper->Stop();
+		delete m_portMapper;
+		m_portMapper = NULL;
+	}
+	if (thePrefs::GetAutoPortForwardingEnabled()) {
+		AddLogLineN(_("Automatic port forwarding (NAT-PMP / PCP) enabled; mapping ports."));
+		m_portMapper = new CPortMapper();
+		m_portMapper->SetLogger(
+			[](const std::string &line) { AddLogLineN(wxString::FromUTF8(line.c_str())); });
+		if (thePrefs::GetUPnPECEnabled()) {
+			m_portMapper->AddMapping(thePrefs::ECPort(), CPortMapper::PROTO_TCP,
+				"aMule TCP External Connections");
+		}
+		m_portMapper->AddMapping(
+			thePrefs::GetPort(), CPortMapper::PROTO_TCP, "aMule TCP listen");
+		m_portMapper->AddMapping(
+			thePrefs::GetPort() + 3, CPortMapper::PROTO_UDP, "aMule server UDP (TCP+3)");
+		m_portMapper->AddMapping(
+			thePrefs::GetUDPPort(), CPortMapper::PROTO_UDP, "aMule extended eMule UDP");
+		m_portMapper->Start();
+	} else {
+		AddLogLineN(_("Automatic port forwarding (NAT-PMP / PCP) is disabled in preferences."));
+	}
+
 	return ok;
 }
 
@@ -1488,6 +1527,23 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 		msPrevKnownMet = msCur;
 	}
 
+#ifdef ENABLE_UPNP
+	// Periodically re-assert the UPnP IGD mappings. The mappings use a
+	// permanent lease, but a router reboot (or some firmwares silently
+	// capping the lease) can drop them; re-adding every 30 minutes
+	// recovers without waiting for a restart. NAT-PMP / PCP renewal is
+	// handled separately by CPortMapper's own worker thread.
+	static uint64 msPrevUPnP = 0;
+	if (m_upnp && thePrefs::GetUPnPEnabled() && msCur - msPrevUPnP >= 30 * 60 * 1000ull) {
+		msPrevUPnP = msCur;
+		try {
+			m_upnp->AddPortMappings(m_upnpMappings);
+		} catch (...) {
+			// Best effort; never let a refresh failure disrupt the timer.
+		}
+	}
+#endif
+
 	// Recommended by lugdunummaster himself - from emule 0.30c
 	serverconnect->KeepConnectionAlive();
 
@@ -1720,6 +1776,11 @@ void CamuleApp::ShutDown()
 	}
 
 	ECServerHandler->KillAllSockets();
+
+	// Stop renewing and remove the NAT-PMP / PCP mappings we created.
+	if (m_portMapper) {
+		m_portMapper->Stop();
+	}
 
 #ifdef ENABLE_UPNP
 	if (thePrefs::GetUPnPEnabled()) {

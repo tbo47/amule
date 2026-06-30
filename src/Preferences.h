@@ -404,6 +404,11 @@ public:
 	static void SetAutoConnectStaticOnly(bool val) { s_autoconnectstaticonly = val; }
 	static bool GetUPnPEnabled() { return s_UPnPEnabled; }
 	static void SetUPnPEnabled(bool val) { s_UPnPEnabled = val; }
+	// Automatic router port forwarding via NAT-PMP / PCP (independent of
+	// the libupnp-based UPnP IGD support). Defaults to enabled so the
+	// listen port is opened automatically out of the box.
+	static bool GetAutoPortForwardingEnabled() { return s_autoPortForwarding; }
+	static void SetAutoPortForwardingEnabled(bool val) { s_autoPortForwarding = val; }
 	static bool GetUPnPECEnabled() { return s_UPnPECEnabled; }
 	static void SetUPnPECEnabled(bool val) { s_UPnPECEnabled = val; }
 	static bool GetUPnPWebServerEnabled() { return s_UPnPWebServerEnabled; }
@@ -756,6 +761,7 @@ protected:
 	static bool s_UPnPECEnabled;
 	static bool s_UPnPWebServerEnabled;
 	static uint16 s_UPnPTCPPort;
+	static bool s_autoPortForwarding;
 
 	////////////// PROXY
 	static CProxyData s_ProxyData;

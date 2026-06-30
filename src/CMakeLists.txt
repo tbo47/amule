@@ -3,6 +3,11 @@ set (INCLUDE_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 set (SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set (EC_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/libs/ec/cpp")
 
+# CPortMapper (NAT-PMP / PCP automatic port forwarding) uses std::thread,
+# which needs the platform threading library linked into the binaries that
+# pull in CORE_SOURCES (amule, amuled).
+find_package (Threads REQUIRED)
+
 # Embed every PNG under src/icons/ as a static byte-array table in a
 # generated C TU (see src/icons/embed_icons.py for the format).
 # CamuleArtProvider then exposes the entries to wxArtProvider at
@@ -166,6 +171,7 @@ if (BUILD_DAEMON)
 		PRIVATE mulecommon
 		PRIVATE mulesocket
 		PRIVATE wxWidgets::NET
+		PRIVATE Threads::Threads
 	)
 
 	if (GLIB_FOUND)
@@ -185,6 +191,9 @@ if (BUILD_DAEMON)
 	if (WIN32)
 		target_link_libraries (amuled
 			PRIVATE shlwapi.lib
+			# CPortMapper: GetBestRoute() + Winsock for NAT-PMP / PCP.
+			PRIVATE iphlpapi
+			PRIVATE ws2_32
 		)
 	endif()
 
@@ -253,6 +262,7 @@ if (BUILD_MONOLITHIC)
 		PRIVATE mulesocket
 		PRIVATE $<$<VERSION_LESS:${wxWidgets_VERSION_STRING},3.1.2>:wxWidgets::ADV>
 		PRIVATE wxWidgets::NET
+		PRIVATE Threads::Threads
 	)
 
 	if (HAVE_BFD)
@@ -278,6 +288,9 @@ if (BUILD_MONOLITHIC)
 	if (WIN32)
 		target_link_libraries (amule
 			PRIVATE shlwapi.lib
+			# CPortMapper: GetBestRoute() + Winsock for NAT-PMP / PCP.
+			PRIVATE iphlpapi
+			PRIVATE ws2_32
 		)
 
 		set_target_properties (amule PROPERTIES

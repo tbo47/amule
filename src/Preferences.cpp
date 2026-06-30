@@ -102,6 +102,7 @@ bool CPreferences::s_UPnPEnabled;
 bool CPreferences::s_UPnPECEnabled;
 bool CPreferences::s_UPnPWebServerEnabled;
 uint16 CPreferences::s_UPnPTCPPort;
+bool CPreferences::s_autoPortForwarding;
 bool CPreferences::s_autoserverlist;
 bool CPreferences::s_deadserver;
 CPath CPreferences::s_incomingdir;
@@ -1316,6 +1317,10 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	// "/eMule/MessageUseCaptchas", s_IsChatCaptchaEnabled, true )));
 	s_MiscList.push_back(new Cfg_Bool("/eMule/AdvancedSpamFilter", s_IsAdvancedSpamfilterEnabled, true));
 	s_MiscList.push_back(new Cfg_Bool("/eMule/MessageUseCaptchas", s_IsChatCaptchaEnabled, true));
+	// Automatic router port forwarding via NAT-PMP / PCP. Config-only (no
+	// GUI widget), enabled by default so the listen port is opened
+	// automatically. Set to 0 in amule.conf to opt out.
+	s_MiscList.push_back(new Cfg_Bool("/eMule/AutoPortForwarding", s_autoPortForwarding, true));
 	s_MiscList.push_back(
 		new Cfg_Bool("/GUI/AppImageIntegrationDeclined", s_appimageIntegrationDeclined, false));
 

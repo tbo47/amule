@@ -44,6 +44,7 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
 		UploadQueue.cpp
 		PartFileWriteThread.cpp
 		PartFileHashThread.cpp
+		PortMapper.cpp
 		ThreadTasks.cpp
 	)
 endif()

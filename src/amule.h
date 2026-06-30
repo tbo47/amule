@@ -65,6 +65,7 @@ class CIPFilter;
 class UploadBandwidthThrottler;
 class CUploadDiskIOThread;
 class CAsioService;
+class CPortMapper;
 #ifdef ENABLE_UPNP
 class CUPnPControlPoint;
 class CUPnPPortMapping;
@@ -298,6 +299,9 @@ public:
 	UploadBandwidthThrottler *uploadBandwidthThrottler;
 	CUploadDiskIOThread *uploadDiskIOThread; // eMule ref: emule.h:92
 	CAsioService *m_AsioService;
+	// Automatic router port forwarding via NAT-PMP / PCP. Always compiled
+	// (no external dependency); complements the optional UPnP IGD support.
+	CPortMapper *m_portMapper;
 #ifdef ENABLE_UPNP
 	CUPnPControlPoint *m_upnp;
 	std::vector<CUPnPPortMapping> m_upnpMappings;
