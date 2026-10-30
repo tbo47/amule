@@ -2,6 +2,12 @@
 # 10 s, "slow" 60 s, "integration" 300 s, and "reverify" runs in a step of its own. Label a
 # test next to its add_test, so adding one never touches the workflow.
 
+# The visible filter summary must follow effective rules, including saved but disabled options.
+add_executable (FilterSelectionSummaryTest FilterSelectionSummaryTest.cpp)
+target_include_directories (FilterSelectionSummaryTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (FilterSelectionSummaryTest muleunit mulecommon)
+add_test (NAME FilterSelectionSummaryTest COMMAND FilterSelectionSummaryTest)
+
 # Shared log rendering and the wx event envelope, without a running daemon.
 add_executable (LogRecordTest
 	LogRecordTest.cpp
@@ -806,6 +812,7 @@ target_link_libraries (ServerMetTest
 # it was online. Needs no app and no daemon.
 add_executable (ClientVersionStringTest
 	ClientVersionStringTest.cpp
+	${CMAKE_SOURCE_DIR}/src/DataToText.cpp
 	${CMAKE_SOURCE_DIR}/src/ClientVersionString.cpp
 )
 
@@ -3159,6 +3166,12 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 					--amuled $<TARGET_FILE:amuled> --amuleapi $<TARGET_FILE:amuleapi>
 			)
 			set_tests_properties (ChatCaptchaIntegrationTest PROPERTIES LABELS "integration")
+			add_test (NAME ClientModHistoryIntegrationTest
+				COMMAND ${Python3_EXECUTABLE}
+					${CMAKE_CURRENT_SOURCE_DIR}/ClientModHistoryIntegrationTest.py
+					--amuled $<TARGET_FILE:amuled> --amuleapi $<TARGET_FILE:amuleapi>
+			)
+			set_tests_properties (ClientModHistoryIntegrationTest PROPERTIES LABELS "integration")
 		endif ()
 		if (BUILD_MONOLITHIC AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
 			find_program (AMULE_XVFB_RUN xvfb-run)
@@ -3601,6 +3614,8 @@ endif ()
 
 find_program (AMULE_TEST_NODE_EXECUTABLE NAMES node nodejs)
 if (AMULE_TEST_NODE_EXECUTABLE)
+	add_test (NAME ClientSoftwareTest
+		COMMAND ${AMULE_TEST_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/ClientSoftwareTest.mjs)
 	add_test (NAME DownloadDeleteTest
 		COMMAND ${AMULE_TEST_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/DownloadDeleteTest.mjs)
 	add_test (NAME MagnetLinkTest
@@ -3722,3 +3737,12 @@ if (BUILD_DAEMON AND ENABLE_INTEGRATION_TESTS AND CMAKE_SYSTEM_NAME STREQUAL "Li
 			$<TARGET_FILE:amuled> $<TARGET_FILE:WriteBufferStall>)
 	set_tests_properties (WriteBackpressureIntegrationTest PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
 endif ()
+add_executable (ECSRPTest ECSRPTest.cpp ${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp)
+target_include_directories (ECSRPTest PRIVATE ${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include ${CMAKE_SOURCE_DIR}/src/libs/ec/cpp)
+target_link_libraries (ECSRPTest PRIVATE ec mulecommon)
+add_test (NAME ECSRPTest COMMAND ECSRPTest)
+
+add_executable (ECSRPConfigTest ECSRPConfigTest.cpp ${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp)
+target_include_directories (ECSRPConfigTest PRIVATE ${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include ${CMAKE_SOURCE_DIR}/src/libs/ec/cpp)
+target_link_libraries (ECSRPConfigTest PRIVATE ec mulecommon)
+add_test (NAME ECSRPConfigTest COMMAND ECSRPConfigTest)

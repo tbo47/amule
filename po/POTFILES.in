@@ -41,6 +41,7 @@ src/FileDetailListCtrl.cpp
 src/FileRenameDialog.h
 src/ExternalCommand.cpp
 src/FileLaunch.cpp
+src/FilterSelectionSummary.h
 src/FirstRunWizard.cpp
 src/FriendList.cpp
 src/FriendListCtrl.cpp
@@ -131,3 +132,4 @@ src/webserver/src/WebInterface.cpp
 src/webserver/src/WebServer.cpp
 packaging/windows/installer_strings.c
 src/kademlia/kademlia/Indexed.cpp
+src/libs/ec/cpp/ECSRPConfig.cpp

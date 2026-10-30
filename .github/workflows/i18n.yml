@@ -1,10 +1,26 @@
 name: I18n CI
 
+# Only what the four jobs read: source strings and Web UI dictionaries, the
+# catalogs, the manpage masters, and the scripts and installer tests.
 on:
   push:
     branches: [ "**" ]
+    paths:
+      - 'src/**'
+      - 'po/**'
+      - 'docs/man/**'
+      - 'scripts/**'
+      - 'packaging/**'
+      - '.github/workflows/i18n.yml'
   pull_request:
     branches: [ "**" ]
+    paths:
+      - 'src/**'
+      - 'po/**'
+      - 'docs/man/**'
+      - 'scripts/**'
+      - 'packaging/**'
+      - '.github/workflows/i18n.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.ref == 'refs/heads/master' && github.sha || '' }}
@@ -88,6 +104,10 @@ jobs:
 
       - name: Installing tools
         run: sudo apt-get install -y gettext po4a
+
+      # Before regenerating: the build renders the committed catalogs.
+      - name: Render translated manpages
+        run: ./scripts/check-manpages-render.sh
 
       - name: Regenerate manpages.pot + merge into manpages-*.po
         run: ./scripts/update-manpages-po.sh
